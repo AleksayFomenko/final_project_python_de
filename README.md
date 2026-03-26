@@ -1,5 +1,7 @@
 # final_project
 
+ETL pipeline на базе Apache Airflow и PySpark для загрузки данных из Parquet (Data Lake) в PostgreSQL (DWH) с поддержкой инкрементальной обработки и нормализации данных.
+
 ---
 
 # Запуск
@@ -11,7 +13,29 @@
 5. airflow - http://localhost:8080/
 6. pg_admin - http://localhost:5050/
 
-# 
+---
+
+# Работа с airflow
+
+1. Откройте ссылку http://localhost:8080/
+2. Введите логин и пароль (airflow)
+3. Перейдите во вкладку DAG
+4. Запустите даг read_parquet_dag
+5. Дождитесь окончания работы ETL pipeline
+6. Запустите build_marts_dag
+7. Дождитесь окончания работы ETL pipeline
+
+# Результаты работы ETL pipeline в pg_admin
+
+1. Откройте ссылку http://localhost:5050/
+2. Добавьте подключение с параметрами:
+- Host: `postgres`
+- Port: `5432`
+- Database: `airflow`
+- User: `airflow`
+- Password: `airflow`
+3. Перейдите в базу airflow
+
 ## 1. Коллекции в mongoDB
 
 ### Users
