@@ -42,7 +42,7 @@ def build_dm_orders_stats():
 
     orders = read_table(spark, "dwh.orders")
     order_items = read_table(spark, "dwh.order_items")
-    stores = read_table(spark, "dwh.stores")
+    stores = read_table(spark, "dwh.stores").withColumnRenamed("address", "store_address")
 
     items_agg = order_items.groupBy("order_id").agg(
         F.sum(F.col("price") * F.col("quantity") - F.col("item_discount")).alias("items_turnover"),
@@ -76,7 +76,7 @@ def build_dm_orders_stats():
                 F.col("order_cancellation_reason").isin("Ошибка приложения", "Проблемы с оплатой"), 1
             ).otherwise(0))
 
-    dm = df.groupBy("dt", "year", "month", "store_id", "address") \
+    dm = df.groupBy("dt", "year", "month", "store_id", "store_address") \
         .agg(
             F.sum("turnover").alias("turnover"),
             F.sum("revenue").alias("revenue"),
@@ -94,8 +94,7 @@ def build_dm_orders_stats():
         .withColumn("orders_per_buyer",
             F.col("orders_count") / F.col("buyers_count")) \
         .withColumn("revenue_per_buyer",
-            F.col("revenue") / F.col("buyers_count")) \
-        .withColumnRenamed("address", "store_address")
+            F.col("revenue") / F.col("buyers_count"))
 
     write_mart(dm, "marts.dm_orders_stats")
     spark.stop()
@@ -106,8 +105,8 @@ def build_dm_items_stats():
 
     orders = read_table(spark, "dwh.orders")
     order_items = read_table(spark, "dwh.order_items")
-    items = read_table(spark, "dwh.items")
-    stores = read_table(spark, "dwh.stores")
+    items = read_table(spark, "dwh.items").withColumnRenamed("title", "item_title")
+    stores = read_table(spark, "dwh.stores").withColumnRenamed("address", "store_address")
 
     df = order_items \
         .join(
@@ -124,16 +123,14 @@ def build_dm_items_stats():
         .withColumn("is_canceled_item",
             F.when(F.col("canceled_quantity") > 0, 1).otherwise(0))
 
-    dm = df.groupBy("dt", "year", "month", "store_id", "address", "item_id", "title", "item_category") \
+    dm = df.groupBy("dt", "year", "month", "store_id", "store_address", "item_id", "item_title", "item_category") \
         .agg(
             F.sum("item_turnover_row").alias("item_turnover"),
             F.sum("quantity").alias("ordered_quantity"),
             F.sum("canceled_quantity").alias("canceled_quantity"),
             F.countDistinct("order_id").alias("orders_with_item"),
             F.sum("is_canceled_item").alias("orders_with_cancel")
-        ) \
-        .withColumnRenamed("address", "store_address") \
-        .withColumnRenamed("title", "item_title")
+        )
 
     write_mart(dm, "marts.dm_items_stats")
     spark.stop()
